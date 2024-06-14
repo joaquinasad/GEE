@@ -1,0 +1,136 @@
+
+var uveg = ee.FeatureCollection("projects/pbaldass2/assets/UnidadesVegetacionArg_Oyarzabal")
+          
+var target_values = ee.Filter.inList('CODIGO', ["12"]);
+var region = uveg.filter(target_values)
+Map.addLayer(region, null, "region")
+
+
+//Paleta para visualización
+var Palettes = require('users/mapbiomas/modules:Palettes.js');
+var palette = Palettes.get('classification8');
+var vis = {
+    'min': 0,
+    'max': 68,
+    'palette': palette,
+    'format': 'png',
+    //'bands': 'classification_2022'
+};
+// Colores adicionales
+palette[45] = '#d0ffd0';
+palette[63] = '#ebf8b5';
+palette[64] = '#000000';
+palette[65] = '#000000';
+palette[66] = '#91ff36';
+palette[67] = '#7dc975'; //color de leñosa abierta
+palette[68] = '#aee37f';
+//
+
+var MB = ee.Image("projects/mapbiomas-public/assets/argentina/collection1/mapbiomas_argentina_collection1_integration_v1")
+                 .select(3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24)
+                 .clip(region)
+print(MB,"MB")
+Map.addLayer(MB.select("classification_2022").clip(region),vis, "MB")
+
+var proyeMB = MB.projection()
+
+var filtrofreq = function(mapbiomas){
+ 
+  var exp = '100*((b(0)+b(1)+b(2)+b(3)+b(4)+b(5)+b(6)+b(7)+b(8)+b(9)+b(10)+b(11)+b(12)+b(13)+b(14)+b(15)' +
+      '+b(16)+b(17)+b(18)+b(19)+b(20)+b(21))/22)';
+  
+  // get frequency
+var bosqueFreq = mapbiomas.eq(3).expression(exp);
+var pastuFreq = mapbiomas.eq(15).expression(exp);
+var agriFreq = mapbiomas.eq(18).expression(exp);
+
+var saida = bosqueFreq.addBands(pastuFreq).addBands(agriFreq)
+saida  = saida.select(['constant','constant_1','constant_2'],['bosqueFreq','pastuFreq','agriFreq'])
+return saida;
+
+}
+
+var saida = filtrofreq(MB)
+Map.addLayer(saida, null, "saida")
+
+var constant = ee.Image.constant(0).clip(region)
+
+var estable = constant.where(saida.select('bosqueFreq').eq(100),3)
+                      .where(saida.select('pastuFreq').eq(100),15)
+                      .where(saida.select('agriFreq').eq(100),18)//.selfMask()
+                      .setDefaultProjection(proyeMB)
+
+Map.addLayer(estable,vis,"estable")                      
+
+// Get information about MODIS projection
+// Load a MODIS EVI image.
+var modis = ee.ImageCollection("MODIS/061/MOD13Q1").select('EVI')
+Map.addLayer(modis.first().clip(region),null,"modis")
+var modisProjection = ee.Image(modis.first()).projection();
+print('MODIS projection:', modisProjection);
+
+// Get estable map at MODIS scale and projection.
+var stablemodis = estable
+    // Force the next reprojection to aggregate instead of resampling.
+    .reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 1024
+    })
+    // Request the data at the scale and projection of the MODIS image.
+    .reproject({
+      crs: modisProjection
+    });
+
+// Display the aggregated, reprojected forest cover data.
+Map.addLayer(stablemodis, vis, 'estable modis');
+
+var mascaraMODIS = stablemodis.eq(3).clip(region)//.or(stablemodis.eq(15)).or(stablemodis.eq(18))
+Map.addLayer(mascaraMODIS, null, 'Mascara MODIS');
+//print(mascaraMODIS, "mascaraMODIS")
+
+//NDVI - Definición de periodo 
+var startyear = 2001; 
+var endyear = 2022; 
+var years = ee.List.sequence(startyear, endyear,1);
+
+// Aplico función para cálculo promedio anual
+var NDVI_anual =  ee.ImageCollection.fromImages(
+  years.map(function (y) {
+      var w = modis.filter(ee.Filter.calendarRange(y, y, 'year'))
+                    .mean()
+                    .clip(region).updateMask(mascaraMODIS)
+      return w.set('year', y)}));
+print(NDVI_anual)
+
+var NDVI_anual2 = NDVI_anual.toBands()
+
+//var NDVI_promedioanual = NDVI_anual.mean().clip(region).updateMask(mascaraMODIS)
+//print(NDVI_promedioanual, "NDVI_promedioanual")
+//Map.addLayer(NDVI_promedioanual, null, 'NDVI_promedioanual');
+
+var mediaanual = NDVI_anual2.reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: region.geometry(),
+  scale: modis.first().select("EVI").projection().nominalScale(),
+  bestEffort: true,
+  maxPixels: 1e13,
+  tileScale: 4
+});
+
+print(mediaanual, "media anual")
+
+/*
+var NDVI_sd = NDVI_anual.reduce(ee.Reducer.stdDev()).clip(region).updateMask(mascaraMODIS)
+var cv = NDVI_sd.divide(NDVI_promedioanual)
+
+var cvinter = cv.reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: region.geometry(),
+  scale: modis.first().select("EVI").projection().nominalScale(),
+  bestEffort: true,
+  maxPixels: 1e13,
+  tileScale: 4
+});
+
+print(cvinter, "cvinter")
+*/                  
