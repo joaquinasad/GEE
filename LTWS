@@ -1,0 +1,86 @@
+//Insertar Poligono de humedales
+var polygonAssetID = 'users/jasad/Poligono_Humedales';
+var polygon = ee.FeatureCollection(polygonAssetID);
+print('Loaded polygon:', polygon);
+Map.addLayer(polygon, {}, 'Polygon Layer');
+
+//Abril 2023
+var sentinel2 = ee.ImageCollection('COPERNICUS/S2')
+  .filterBounds(polygon)
+  .filterDate('2023-04-01', '2023-04-30')
+  .filterMetadata('CLOUD_COVERAGE_ASSESSMENT', 'less_than', 10);
+var image = sentinel2.median();
+Map.addLayer(image, {bands: ['B3', 'B8', 'B11'], min: 0, max: 3000}, 'Abr-2023');
+Export.image.toDrive({image:image, description:'abril2023', region: polygon, scale: 30, maxPixels: 1e12});
+
+//Julio 2023
+var sentinel2 = ee.ImageCollection('COPERNICUS/S2')
+  .filterBounds(polygon)
+  .filterDate('2023-07-01', '2023-07-31')
+  .filterMetadata('CLOUD_COVERAGE_ASSESSMENT', 'less_than', 10);
+var image = sentinel2.median();
+Map.addLayer(image, {bands: ['B3', 'B8', 'B11'], min: 0, max: 3000}, 'Jul-2023');
+Export.image.toDrive({image:image, description:'Julio2023', region: polygon, scale: 30, maxPixels: 1e12});
+
+//Septiembre 2023
+var sentinel2 = ee.ImageCollection('COPERNICUS/S2')
+  .filterBounds(polygon)
+  .filterDate('2023-09-01', '2023-09-30')
+  .filterMetadata('CLOUD_COVERAGE_ASSESSMENT', 'less_than', 10);
+var image = sentinel2.median();
+Map.addLayer(image, {bands: ['B3', 'B8', 'B11'], min: 0, max: 3000}, 'Sep-2023');
+Export.image.toDrive({image:image, description:'Septiembre2023', region: polygon, scale: 30, maxPixels: 1e12});
+
+//Octubre 2023
+var sentinel2 = ee.ImageCollection('COPERNICUS/S2')
+  .filterBounds(polygon)
+  .filterDate('2023-10-01', '2023-10-31')
+  .filterMetadata('CLOUD_COVERAGE_ASSESSMENT', 'less_than', 10);
+var image = sentinel2.median();
+Map.addLayer(image, {bands: ['B3', 'B8', 'B11'], min: 0, max: 3000}, 'Oct-2023');
+Export.image.toDrive({image:image, description:'Octubre2023', region: polygon, scale: 30, maxPixels: 1e12});
+
+//Noviembre 2023 
+var sentinel2 = ee.ImageCollection('COPERNICUS/S2')
+  .filterBounds(polygon)
+  .filterDate('2023-11-01', '2023-11-30')
+  .filterMetadata('CLOUD_COVERAGE_ASSESSMENT', 'less_than', 10);
+var image = sentinel2.median();
+Map.addLayer(image, {bands: ['B3', 'B8', 'B11'], min: 0, max: 3000}, 'Nov-2023');
+Export.image.toDrive({image:image, description:'Noviembre2023', region: polygon, scale: 30, maxPixels: 1e12});
+
+//Diciembre 2023
+var sentinel2 = ee.ImageCollection('COPERNICUS/S2')
+  .filterBounds(polygon)
+  .filterDate('2023-12-01', '2023-12-31')
+  .filterMetadata('CLOUD_COVERAGE_ASSESSMENT', 'less_than', 10);
+var image = sentinel2.median();
+Map.addLayer(image, {bands: ['B3', 'B8', 'B11'], min: 0, max: 3000}, 'Dic-2023');
+Export.image.toDrive({image:image, description:'Diciembre2023', region: polygon, scale: 30, maxPixels: 1e12});
+
+//Enero 2024 
+var sentinel2 = ee.ImageCollection('COPERNICUS/S2')
+  .filterBounds(polygon)
+  .filterDate('2024-01-01', '2024-01-31')
+  .filterMetadata('CLOUD_COVERAGE_ASSESSMENT', 'less_than', 10);
+var image = sentinel2.median();
+Map.addLayer(image, {bands: ['B3', 'B8', 'B11'], min: 0, max: 3000}, 'Ene-2024');
+Export.image.toDrive({image:image, description:'Enero2024', region: polygon, scale: 30, maxPixels: 1e12});
+
+//Febrero 2024
+var sentinel2 = ee.ImageCollection('COPERNICUS/S2')
+  .filterBounds(polygon)
+  .filterDate('2024-02-06', '2024-02-29')
+  .filterMetadata('CLOUD_COVERAGE_ASSESSMENT', 'less_than', 10);
+var image = sentinel2.median();
+Map.addLayer(image, {bands: ['B3', 'B8', 'B11'], min: 0, max: 3000}, 'Feb-2024');
+Export.image.toDrive({image:image, description:'Febrero2024', region: polygon, scale: 30, maxPixels: 1e12});
+
+//Abril 2024
+var sentinel2 = ee.ImageCollection('COPERNICUS/S2')
+  .filterBounds(polygon)
+  .filterDate('2024-04-01', '2024-04-21')
+  .filterMetadata('CLOUD_COVERAGE_ASSESSMENT', 'less_than', 10);
+var image = sentinel2.median();
+Map.addLayer(image, {bands: ['B3', 'B8', 'B11'], min: 0, max: 3000}, 'Abr-2024');
+Export.image.toDrive({image:image, description:'Abril2024', region: polygon, scale: 30, maxPixels: 1e12});
