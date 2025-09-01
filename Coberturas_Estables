@@ -1,0 +1,76 @@
+// ---------------------------------------------------------------------
+// REGION DE ESTUDIO
+// ---------------------------------------------------------------------
+var uveg = ee.FeatureCollection("projects/pbaldass2/assets/UnidadesVegetacionArg_Oyarzabal");
+var target_values = ee.Filter.inList('CODIGO', ["22","24", "26", "7", "8"]); //Leñosas Abiertas
+var region = uveg.filter(target_values);
+Map.addLayer(region, null, "region");
+
+// ---------------------------------------------------------------------
+// PALETA
+// ---------------------------------------------------------------------
+var Palettes = require('users/mapbiomas/modules:Palettes.js');
+var palette = Palettes.get('classification8');
+palette[45] = '#d0ffd0';
+palette[63] = '#ebf8b5';
+palette[64] = '#000000';
+palette[65] = '#000000';
+palette[66] = '#91ff36';
+palette[67] = '#7dc975';
+palette[68] = '#aee37f';
+
+var vis = {
+  min: 0,
+  max: 68,
+  palette: palette
+};
+
+// ---------------------------------------------------------------------
+// MAPBIOMAS
+// ---------------------------------------------------------------------
+var MB = ee.Image("projects/mapbiomas-public/assets/argentina/collection1/mapbiomas_argentina_collection1_integration_v1")
+           .select(3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24)
+           .clip(region);
+
+Map.addLayer(MB.select("classification_2022"), vis, "MB");
+
+// ---------------------------------------------------------------------
+// FRECUENCIA COBERTURA
+// ---------------------------------------------------------------------
+var filtrofreq = function(mapbiomas){
+  var exp = '100*((b(0)+b(1)+b(2)+b(3)+b(4)+b(5)+b(6)+b(7)+b(8)+b(9)+b(10)+b(11)+b(12)+b(13)+b(14)+b(15)' +
+      '+b(16)+b(17)+b(18)+b(19)+b(20)+b(21))/22)';
+  
+  var pastizalFreq = mapbiomas.eq(4).expression(exp);
+  var saida = pastizalFreq.rename('pastizalFreq');
+  return saida;
+};
+
+var saida = filtrofreq(MB);
+Map.addLayer(saida, {min:0,max:100,palette:['white','green']}, "saida");
+
+// ---------------------------------------------------------------------
+// ESTABLE
+// ---------------------------------------------------------------------
+var estable = ee.Image.constant(0).clip(region)
+                .where(saida.eq(100), 4)
+                .clip(region);
+
+Map.addLayer(estable, vis, "estable");
+
+// ---------------------------------------------------------------------
+// EXPORTAR
+// ---------------------------------------------------------------------
+var regionMask = ee.Image.constant(1).clip(region).mask(ee.Image.constant(1).clip(region));
+var estableMasked = estable.updateMask(regionMask);
+
+Export.image.toDrive({
+  image: estableMasked,
+  description: 'estable_LeñosasAbiertas',
+  folder: 'EarthEngine',
+  fileNamePrefix: 'estable_LeñosasAbiertas',
+  region: region.geometry(),
+  scale: 250,       // MODIS resolution
+  crs: 'EPSG:4326',
+  maxPixels: 1e13
+});
